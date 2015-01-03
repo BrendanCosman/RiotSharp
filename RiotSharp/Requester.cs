@@ -70,6 +70,29 @@ namespace RiotSharp
         /// <returns>
         /// The <see cref="string"/>.
         /// </returns>
+        public string CreateRequest(string relativeUrl, Region region, List<string> addedArguments = null, bool useSsl = true)
+        {
+            return CreateRequest(relativeUrl, region + ".api.pvp.net", addedArguments, useSsl);
+        }
+
+        /// <summary>
+        /// The create request.
+        /// </summary>
+        /// <param name="relativeUrl">
+        /// The relative url.
+        /// </param>
+        /// <param name="rootDomain">
+        /// The root domain.
+        /// </param>
+        /// <param name="addedArguments">
+        /// The added arguments.
+        /// </param>
+        /// <param name="useSsl">
+        /// The use Ssl.
+        /// </param>
+        /// <returns>
+        /// The <see cref="string"/>.
+        /// </returns>
         public string CreateRequest(string relativeUrl, string rootDomain, List<string> addedArguments = null, bool useSsl = true)
         {
             this.rootDomain = rootDomain;
@@ -77,6 +100,33 @@ namespace RiotSharp
             return GetResponse(request);
         }
 
+        /// <summary>
+        /// The create request async.
+        /// </summary>
+        /// <param name="relativeUrl">
+        /// The relative url.
+        /// </param>
+        /// <param name="rootDomain">
+        /// The root domain.
+        /// </param>
+        /// <param name="addedArguments">
+        /// The added arguments.
+        /// </param>
+        /// <param name="useSsl">
+        /// The use Ssl.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Task"/>.
+        /// </returns>
+        public async Task<string> CreateRequestAsync(
+            string relativeUrl,
+            Region region,
+            List<string> addedArguments = null,
+            bool useSsl = true)
+        {
+            return await CreateRequestAsync(relativeUrl, region + ".api.pvp.net", addedArguments, useSsl);
+        }
+        
         /// <summary>
         /// The create request async.
         /// </summary>
@@ -131,7 +181,7 @@ namespace RiotSharp
             {
                 request =
                     (HttpWebRequest)
-                    WebRequest.Create(string.Format(protocol + "://{0}{1}?api_key={2}", rootDomain, relativeUrl, ApiKey));
+                    WebRequest.Create(string.Format("{0}://{1}{2}?api_key={3}", protocol, rootDomain, relativeUrl, ApiKey));
             }
             else
             {
@@ -139,8 +189,8 @@ namespace RiotSharp
                     (HttpWebRequest)
                     WebRequest.Create(
                         string.Format(
-                            protocol +
-                            "://{0}{1}?{2}api_key={3}",
+                            "{0}://{1}{2}?{3}api_key={4}",
+                            protocol,
                             rootDomain,
                             relativeUrl,
                             BuildArgumentsString(addedArguments),
@@ -163,14 +213,13 @@ namespace RiotSharp
         /// </returns>
         protected string GetResponse(HttpWebRequest request)
         {
-            string result = string.Empty;
             try
             {
                 var response = (HttpWebResponse)request.GetResponse();
 
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
-                    result = reader.ReadToEnd();
+                    return reader.ReadToEnd();
                 }
             }
             catch (WebException ex)
@@ -178,7 +227,7 @@ namespace RiotSharp
                 HandleWebException(ex);
             }
 
-            return result;
+            return string.Empty;
         }
 
         /// <summary>
@@ -192,22 +241,33 @@ namespace RiotSharp
         /// </returns>
         protected async Task<string> GetResponseAsync(HttpWebRequest request)
         {
-            string result = string.Empty;
             try
             {
                 var response = (HttpWebResponse)(await request.GetResponseAsync());
 
                 using (var reader = new StreamReader(response.GetResponseStream()))
                 {
-                    result = await reader.ReadToEndAsync();
+                    return await reader.ReadToEndAsync();
                 }
+            }
+            catch (System.AggregateException aggregate)
+            {
+                foreach (System.Exception ex in aggregate.InnerExceptions)
+                {
+                    if (((ex) is WebException))
+                    {                        
+                        HandleWebException((WebException)ex);
+                    }                    
+                }
+
+                // Nothing better to do, really… 
+                throw;                
             }
             catch (WebException ex)
             {
                 HandleWebException(ex);
             }
-
-            return result;
+            return string.Empty;
         }
 
         /// <summary>
